@@ -1,11 +1,26 @@
 node_modules/
+npm-debug.log*
+
+# Runtime-generated application data (created automatically on first run -
+# see server/lib/init.js). The seed CSV (seed-source.csv) IS tracked.
+data/doctors.json
+data/admin.json
+data/cases.json
+data/responses.json
+data/.session-secret
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+.firebaserc.local
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+*.swp
+
+# Env
 .env
-server/data/users.json
-server/data/reviews.json
-server/data/session-status.json
-server/data/imported-sessions.json
-server/data/cases.json
-uploads/*
-exports/*
-!uploads/.gitkeep
-!exports/.gitkeep
+.env.local

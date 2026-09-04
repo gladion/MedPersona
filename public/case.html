@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case Sessions - MedSim Review</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar"><div id="sidebar-mount"></div></aside>
+  <div class="main-area">
+    <div class="topbar">
+      <div>
+        <div class="breadcrumb"><a href="/doctor.html">My Cases</a> / <span id="case-title-crumb">…</span></div>
+        <h1 id="case-title">Loading…</h1>
+      </div>
+    </div>
+    <div class="page-body">
+      <div id="loading" class="center-screen" style="min-height:40vh"><div class="spinner"></div><div class="muted-text">Loading sessions…</div></div>
+      <div id="content" style="display:none">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Session Date</th>
+                <th>Duration</th>
+                <th>Messages</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="session-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  const user = Auth.guard();
+  const params = new URLSearchParams(location.search);
+  const caseUuid = params.get('case');
+
+  if (user) {
+    renderSidebar(user.role === 'admin' ? 'browse' : 'cases');
+    if (!caseUuid) {
+      location.href = '/doctor.html';
+    } else {
+      loadCase();
+    }
+  }
+
+  async function loadCase() {
+    try {
+      const c = await apiFetch(`/api/cases/${encodeURIComponent(caseUuid)}`);
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+      document.title = `${c.title} - MedSim Review`;
+      document.getElementById('case-title').textContent = c.title;
+      document.getElementById('case-title-crumb').textContent = c.title;
+
+      const rows = c.sessions.map(s => `
+        <tr class="session-row" onclick="location.href='/session.html?id=${encodeURIComponent(s.id)}'">
+          <td><span class="status-label ${s.status}"><span class="status-dot ${s.status}"></span>${statusLabel(s.status)}</span></td>
+          <td>${formatDate(s.timestamp)}</td>
+          <td>${formatDuration(s.chat_duration)}</td>
+          <td>${s.messageCount}</td>
+          <td style="text-align:right;color:var(--blue);font-weight:600">Open →</td>
+        </tr>
+      `).join('');
+      document.getElementById('session-rows').innerHTML = rows || `<tr><td colspan="5" class="muted-text" style="text-align:center;padding:2rem">No sessions recorded for this case yet.</td></tr>`;
+    } catch (err) {
+      document.getElementById('loading').style.display = 'none';
+      showToast(err.message, true);
+    }
+  }
+</script>
+</body>
+</html>

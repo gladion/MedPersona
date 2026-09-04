@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedSim Review Portal - Sign In</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-brand">
+      <span class="brand-icon">🩺</span>
+      <span class="brand-name">MedSim Review</span>
+    </div>
+    <div class="login-sub">Technion &middot; Faculty of Medicine &amp; Faculty of Education<br>MARAK Course &mdash; Virtual Patient Case Review Portal</div>
+
+    <div id="error-banner" class="error-banner"></div>
+
+    <form id="login-form">
+      <div class="field">
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" autocomplete="username" required placeholder="e.g. doctor">
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="••••">
+      </div>
+      <button type="submit" id="submit-btn" class="btn btn-primary btn-block">Sign In</button>
+    </form>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  // If already logged in, skip straight to the right app
+  (function () {
+    const user = Auth.getUser();
+    if (user && Auth.getToken()) {
+      window.location.href = user.role === 'admin' ? '/admin.html' : '/doctor.html';
+    }
+  })();
+
+  const form = document.getElementById('login-form');
+  const errorBanner = document.getElementById('error-banner');
+  const submitBtn = document.getElementById('submit-btn');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorBanner.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Signing in…';
+
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+
+    try {
+      const data = await apiFetch('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ username, password })
+      });
+      Auth.setSession(data.token, data.user);
+      window.location.href = data.user.role === 'admin' ? '/admin.html' : '/doctor.html';
+    } catch (err) {
+      errorBanner.textContent = err.message || 'Sign in failed';
+      errorBanner.style.display = 'block';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Sign In';
+    }
+  });
+</script>
+</body>
+</html>

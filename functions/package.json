@@ -1,0 +1,19 @@
+{
+  "name": "medsim-review-functions",
+  "description": "Firebase Cloud Functions wrapper around the MedSim Review Express app (optional deployment path).",
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "multer": "^1.4.5-lts.1",
+    "uuid": "^9.0.1",
+    "jsonwebtoken": "^9.0.2",
+    "csv-parse": "^5.5.6",
+    "firebase-functions": "^4.9.0",
+    "firebase-admin": "^12.1.0"
+  },
+  "private": true
+}

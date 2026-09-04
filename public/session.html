@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session Review - MedSim Review</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar"><div id="sidebar-mount"></div></aside>
+  <div class="main-area">
+    <div class="topbar">
+      <div>
+        <div class="breadcrumb"><a href="/doctor.html">My Cases</a> / <a id="case-crumb" href="#">…</a> / Session</div>
+        <h1>Session Review</h1>
+      </div>
+      <span id="status-pill" class="status-label black"><span class="status-dot black"></span>Loading…</span>
+    </div>
+    <div class="page-body">
+      <div id="loading" class="center-screen" style="min-height:40vh"><div class="spinner"></div><div class="muted-text">Loading session…</div></div>
+
+      <div id="content" style="display:none">
+        <div class="patient-header">
+          <h2 id="patient-title">—</h2>
+          <div class="muted-text" style="color:rgba(255,255,255,.7)">Virtual patient case</div>
+          <div class="patient-meta">
+            <div class="meta-item"><span class="meta-label">Session Date</span><span class="meta-value" id="m-date">—</span></div>
+            <div class="meta-item"><span class="meta-label">Duration</span><span class="meta-value" id="m-duration">—</span></div>
+            <div class="meta-item"><span class="meta-label">Hints Used</span><span class="meta-value" id="m-hints">—</span></div>
+            <div class="meta-item"><span class="meta-label">Student Score</span><span class="meta-value" id="m-score">—</span></div>
+          </div>
+          <div class="patient-meta" style="margin-top:1rem">
+            <div class="meta-item" style="flex:1 1 100%">
+              <span class="meta-label">Tests / Examinations Performed</span>
+              <div class="tag-list" id="m-tests"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title"><span class="num-badge">💬</span>Student ↔ Virtual Patient Conversation</div>
+        <div class="chat-box" id="chat-box"></div>
+
+        <div class="section-title"><span class="num-badge">1</span>Questionnaire 1 — Virtual Patient</div>
+        <div class="qform" id="q1-form"></div>
+
+        <div class="section-title"><span class="num-badge">2</span>Questionnaire 2 — The Student</div>
+        <div class="qform" id="q2-form"></div>
+
+        <div id="feedback-section">
+          <div class="section-title"><span class="num-badge">🤖</span>AI-Generated Feedback</div>
+          <div id="feedback-locked" class="locked-banner">
+            🔒 Complete Questionnaire 1 and Questionnaire 2 above to unlock the AI feedback given to the student.
+          </div>
+          <div id="feedback-box" style="display:none"></div>
+        </div>
+
+        <div id="q3-section" style="display:none">
+          <div class="section-title"><span class="num-badge">3</span>Questionnaire 3 — AI Feedback Quality</div>
+          <div class="qform" id="q3-form"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  const user = Auth.guard();
+  const params = new URLSearchParams(location.search);
+  const sessionId = params.get('id');
+  let QDEFS = null;
+  let currentData = null;
+  const saveTimers = {};
+
+  if (user) {
+    renderSidebar(user.role === 'admin' ? 'browse' : 'cases');
+    if (!sessionId) {
+      location.href = '/doctor.html';
+    } else {
+      init();
+    }
+  }
+
+  async function init() {
+    try {
+      const defsRes = await apiFetch('/api/questionnaire-defs');
+      QDEFS = defsRes.questionnaires;
+      await loadSession();
+    } catch (err) {
+      document.getElementById('loading').style.display = 'none';
+      showToast(err.message, true);
+    }
+  }
+
+  async function loadSession() {
+    const data = await apiFetch(`/api/sessions/${encodeURIComponent(sessionId)}`);
+    currentData = data;
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+
+    document.title = `${data.case.title} - Session Review`;
+    document.getElementById('case-crumb').textContent = data.case.title;
+    document.getElementById('case-crumb').href = `/case.html?case=${encodeURIComponent(data.case.case_uuid)}`;
+    document.getElementById('patient-title').textContent = data.case.title;
+    document.getElementById('m-date').textContent = formatDate(data.session.timestamp);
+    document.getElementById('m-duration').textContent = formatDuration(data.session.chat_duration);
+    document.getElementById('m-hints').textContent = data.session.hints_used ?? '—';
+    document.getElementById('m-score').textContent = data.session.score !== null && data.session.score !== undefined ? `${data.session.score} / 10` : '—';
+
+    const tests = (data.session.tests_asked && data.session.tests_asked.length) ? data.session.tests_asked : (data.session.requested_tests || []);
+    document.getElementById('m-tests').innerHTML = tests.length
+      ? tests.map(t => `<span class="tag">${escHtml(t)}</span>`).join('')
+      : '<span class="muted-text" style="color:rgba(255,255,255,.6)">None recorded</span>';
+
+    renderStatusPill(data.status);
+    renderChat(data.session.messages);
+    renderQ1(data.responses.q1);
+    renderQ2(data.responses.q2);
+    renderFeedback(data);
+    renderQ3(data);
+  }
+
+  function renderStatusPill(status) {
+    const el = document.getElementById('status-pill');
+    el.className = `status-label ${status}`;
+    el.innerHTML = `<span class="status-dot ${status}"></span>${statusLabel(status)}`;
+  }
+
+  function renderChat(messages) {
+    const box = document.getElementById('chat-box');
+    if (!messages || !messages.length) {
+      box.innerHTML = '<div class="muted-text">No conversation recorded.</div>';
+      return;
+    }
+    box.innerHTML = messages.map(m => `
+      <div class="chat-msg ${m.role === 'user' ? 'user' : 'assistant'}">
+        <div class="bubble">
+          <div class="who">${m.role === 'user' ? 'Student' : 'Virtual Patient'}</div>
+          <div>${escHtml(m.content)}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ---------- Questionnaire 1 (Likert 1-5 + open text) ----------
+  function renderQ1(existing) {
+    const def = QDEFS.q1;
+    const answers = (existing && existing.answers) || {};
+    const form = document.getElementById('q1-form');
+    form.innerHTML = `
+      <div class="qform-desc">${escHtml(def.description)}</div>
+      ${def.items.map(it => likertRow('q1', it, answers[it.id])).join('')}
+      <div class="likert-row">
+        <div class="likert-question">${escHtml(def.openEnded.text)}</div>
+        <textarea class="textarea-field" id="q1-open" placeholder="Optional notes…">${escHtml(answers[def.openEnded.id] || '')}</textarea>
+      </div>
+      <div class="save-row">
+        <span class="save-status" id="q1-save-status"></span>
+      </div>
+    `;
+    def.items.forEach(it => {
+      form.querySelectorAll(`input[name="q1_${it.id}"]`).forEach(input => {
+        input.addEventListener('change', () => scheduleSave('q1', 0));
+      });
+    });
+    document.getElementById('q1-open').addEventListener('input', () => scheduleSave('q1', 600));
+  }
+
+  function likertRow(prefix, item, selected) {
+    const def = QDEFS[prefix];
+    return `
+      <div class="likert-row">
+        <div class="likert-question">${escHtml(item.text)}</div>
+        <div class="likert-scale">
+          ${def.scale.map((label, idx) => {
+            const val = idx + 1;
+            const id = `${prefix}_${item.id}_${val}`;
+            return `
+              <div class="likert-opt">
+                <input type="radio" name="${prefix}_${item.id}" id="${id}" value="${val}" ${String(selected) === String(val) ? 'checked' : ''}>
+                <label for="${id}">${label}</label>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function collectLikert(prefix, items) {
+    const answers = {};
+    items.forEach(it => {
+      const checked = document.querySelector(`input[name="${prefix}_${it.id}"]:checked`);
+      if (checked) answers[it.id] = checked.value;
+    });
+    return answers;
+  }
+
+  // ---------- Questionnaire 2 (1-10 scale sliders) ----------
+  function renderQ2(existing) {
+    const def = QDEFS.q2;
+    const answers = (existing && existing.answers) || {};
+    const form = document.getElementById('q2-form');
+    form.innerHTML = `
+      <div class="qform-desc">${escHtml(def.description)}</div>
+      ${def.items.map(it => {
+        const val = answers[it.id] !== undefined ? answers[it.id] : 5;
+        return `
+          <div class="scale10-row">
+            <div class="scale10-header">
+              <div class="likert-question">${escHtml(it.text)}</div>
+              <div class="scale10-value" id="q2-val-${it.id}">${val}</div>
+            </div>
+            <input type="range" min="1" max="10" step="1" value="${val}" id="q2-${it.id}" data-id="${it.id}">
+          </div>
+        `;
+      }).join('')}
+      <div class="save-row">
+        <span class="save-status" id="q2-save-status"></span>
+      </div>
+    `;
+    def.items.forEach(it => {
+      const input = document.getElementById(`q2-${it.id}`);
+      input.addEventListener('input', () => {
+        document.getElementById(`q2-val-${it.id}`).textContent = input.value;
+        scheduleSave('q2', 400);
+      });
+    });
+  }
+
+  function collectScale10(items) {
+    const answers = {};
+    items.forEach(it => {
+      const input = document.getElementById(`q2-${it.id}`);
+      if (input) answers[it.id] = input.value;
+    });
+    return answers;
+  }
+
+  // ---------- Questionnaire 3 (Likert 1-5) ----------
+  function renderQ3(data) {
+    const section = document.getElementById('q3-section');
+    if (!data.feedbackUnlocked) { section.style.display = 'none'; return; }
+    section.style.display = 'block';
+    const def = QDEFS.q3;
+    const existing = data.responses.q3;
+    const answers = (existing && existing.answers) || {};
+    const form = document.getElementById('q3-form');
+    form.innerHTML = `
+      <div class="qform-desc">${escHtml(def.description)}</div>
+      ${def.items.map(it => likertRow('q3', it, answers[it.id])).join('')}
+      <div class="save-row">
+        <span class="save-status" id="q3-save-status"></span>
+      </div>
+    `;
+    def.items.forEach(it => {
+      form.querySelectorAll(`input[name="q3_${it.id}"]`).forEach(input => {
+        input.addEventListener('change', () => scheduleSave('q3', 0));
+      });
+    });
+  }
+
+  // ---------- Feedback ----------
+  function renderFeedback(data) {
+    const lockedEl = document.getElementById('feedback-locked');
+    const boxEl = document.getElementById('feedback-box');
+    if (!data.feedbackUnlocked || !data.review) {
+      lockedEl.style.display = 'flex';
+      boxEl.style.display = 'none';
+      return;
+    }
+    lockedEl.style.display = 'none';
+    boxEl.style.display = 'block';
+    const r = data.review;
+    const categories = (r.categories || []).map(cat => `
+      <div class="feedback-cat">
+        <div class="feedback-cat-head">
+          <span class="cat-name">${escHtml(cat.name)}</span>
+          <span class="cat-score">${cat.score ?? '—'}</span>
+        </div>
+        <div class="feedback-cols">
+          <div class="good">
+            <span class="col-label">✓ Strengths</span>
+            <ul>${(cat.good || []).map(g => `<li>${escHtml(g)}</li>`).join('') || '<li>—</li>'}</ul>
+          </div>
+          <div class="bad">
+            <span class="col-label">✕ Areas to improve</span>
+            <ul>${(cat.bad || []).map(b => `<li>${escHtml(b)}</li>`).join('') || '<li>—</li>'}</ul>
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    boxEl.innerHTML = `
+      <div class="feedback-box">
+        ${r.overall_score !== undefined ? `<div class="feedback-score">⭐ Overall score: ${r.overall_score}</div>` : ''}
+        ${r.summary ? `<div class="feedback-summary">${escHtml(r.summary)}</div>` : ''}
+        ${r.correct_diagnosis ? `<div class="feedback-summary"><strong>Correct diagnosis:</strong> ${escHtml(r.correct_diagnosis)}</div>` : ''}
+        ${categories}
+      </div>
+    `;
+  }
+
+  // ---------- Autosave ----------
+  function scheduleSave(qKey, delay) {
+    clearTimeout(saveTimers[qKey]);
+    setSaveStatus(qKey, 'Saving…', false);
+    saveTimers[qKey] = setTimeout(() => doSave(qKey), delay);
+  }
+
+  async function doSave(qKey) {
+    let answers;
+    if (qKey === 'q1') {
+      answers = collectLikert('q1', QDEFS.q1.items);
+      answers.issues = document.getElementById('q1-open').value;
+    } else if (qKey === 'q2') {
+      answers = collectScale10(QDEFS.q2.items);
+    } else {
+      answers = collectLikert('q3', QDEFS.q3.items);
+    }
+
+    try {
+      const res = await apiFetch(`/api/sessions/${encodeURIComponent(sessionId)}/responses/${qKey}`, {
+        method: 'POST',
+        body: JSON.stringify({ answers })
+      });
+      setSaveStatus(qKey, 'Saved', true);
+      renderStatusPill(res.status);
+
+      // Re-check whether Q1+Q2 completion just unlocked the feedback/Q3
+      if (qKey === 'q1' || qKey === 'q2') {
+        const wasUnlocked = document.getElementById('feedback-box').style.display === 'block';
+        if (!wasUnlocked) {
+          const fresh = await apiFetch(`/api/sessions/${encodeURIComponent(sessionId)}`);
+          currentData = fresh;
+          renderFeedback(fresh);
+          renderQ3(fresh);
+          if (fresh.feedbackUnlocked) showToast('Both questionnaires complete — AI feedback unlocked below.');
+        }
+      }
+    } catch (err) {
+      setSaveStatus(qKey, 'Not saved — ' + err.message, false);
+      showToast(err.message, true);
+    }
+  }
+
+  function setSaveStatus(qKey, text, saved) {
+    const el = document.getElementById(`${qKey}-save-status`);
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'save-status' + (saved ? ' saved' : '');
+  }
+</script>
+</body>
+</html>

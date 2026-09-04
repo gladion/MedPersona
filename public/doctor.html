@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Cases - MedSim Review</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar"><div id="sidebar-mount"></div></aside>
+  <div class="main-area">
+    <div class="topbar">
+      <div>
+        <h1>Virtual Patient Cases</h1>
+      </div>
+      <div class="muted-text" id="summary-line"></div>
+    </div>
+    <div class="page-body">
+      <div id="loading" class="center-screen" style="min-height:40vh"><div class="spinner"></div><div class="muted-text">Loading cases…</div></div>
+      <div id="empty" class="empty-state" style="display:none">
+        <div class="empty-icon">🗂️</div>
+        <div>No cases have been loaded into the system yet.</div>
+      </div>
+      <div id="case-grid" class="grid grid-cases" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  const user = Auth.guard();
+  if (user) {
+    renderSidebar(user.role === 'admin' ? 'browse' : 'cases');
+    loadCases();
+  }
+
+  async function loadCases() {
+    try {
+      const data = await apiFetch('/api/cases');
+      document.getElementById('loading').style.display = 'none';
+
+      if (!data.cases.length) {
+        document.getElementById('empty').style.display = 'block';
+        return;
+      }
+
+      const totalSessions = data.cases.reduce((s, c) => s + c.sessionCount, 0);
+      const totalDone = data.cases.reduce((s, c) => s + c.progress.green, 0);
+      document.getElementById('summary-line').textContent = `${totalDone} / ${totalSessions} sessions reviewed`;
+
+      const grid = document.getElementById('case-grid');
+      grid.style.display = 'grid';
+      grid.innerHTML = data.cases.map(c => `
+        <div class="case-card" onclick="location.href='/case.html?case=${encodeURIComponent(c.case_uuid)}'">
+          <div class="title">${escHtml(c.title)}</div>
+          <div class="sub">${c.sessionCount} session${c.sessionCount === 1 ? '' : 's'}</div>
+          <div class="progress-row">
+            <span class="progress-chip green">● ${c.progress.green} handled</span>
+            <span class="progress-chip yellow">● ${c.progress.yellow} in review</span>
+            <span class="progress-chip black">● ${c.progress.black} not handled</span>
+          </div>
+        </div>
+      `).join('');
+    } catch (err) {
+      document.getElementById('loading').style.display = 'none';
+      showToast(err.message, true);
+    }
+  }
+</script>
+</body>
+</html>
