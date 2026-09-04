@@ -1,0 +1,11 @@
+node_modules/
+.env
+server/data/users.json
+server/data/reviews.json
+server/data/session-status.json
+server/data/imported-sessions.json
+server/data/cases.json
+uploads/*
+exports/*
+!uploads/.gitkeep
+!exports/.gitkeep

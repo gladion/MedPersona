@@ -1,0 +1,151 @@
+[
+  {
+    "id": "64f5aceb-197c-4102-92eb-846f089cc7ed",
+    "title": "Mrs. Levi",
+    "sessionCount": 20,
+    "diagnoses": [
+      "Flu",
+      "Viral Ilnees",
+      "common cold",
+      "flu",
+      "flue",
+      "influenza",
+      "pharyngitis or tonsilitis",
+      "pharyngitis viral",
+      "probable infective pharyngitis",
+      "seasonal virus",
+      "strep",
+      "throat infection",
+      "upper respiratory tract infection",
+      "viral fever",
+      "viral infection",
+      "viral pharyngitis",
+      "viral pneumonia",
+      "שפעת ויראלית"
+    ]
+  },
+  {
+    "id": "90a6a7b4-7f58-479c-a22c-fd6b02817e69",
+    "title": "Mr. Rossi",
+    "sessionCount": 12,
+    "diagnoses": [
+      "ACS,MI",
+      "Acute coronary syndrome",
+      "Inferior Stemi",
+      "acute coronary syndromes",
+      "acute myocardial infarction",
+      "mi",
+      "miocardial infarction",
+      "myocardial infraction",
+      "stemi",
+      "stemi right coronary artery",
+      "stmi"
+    ]
+  },
+  {
+    "id": "40f48e2a-86af-4531-bee9-66266f97836b",
+    "title": "Mr. Geller",
+    "sessionCount": 12,
+    "diagnoses": [
+      "Acute Diverticulitis",
+      "Intestinal obstruction",
+      "acute diverticulitis",
+      "constipation",
+      "divercolitis",
+      "diverticulitis",
+      "diverticulitis and bowel obstruction",
+      "ibd",
+      "suspected malignancy",
+      "זיהום בבטן כתוצאה מהעצירות וחסימת מעיים"
+    ]
+  },
+  {
+    "id": "2a199623-cd91-4a44-bccd-5c29406acdd8",
+    "title": "Mrs. Muller",
+    "sessionCount": 10,
+    "diagnoses": [
+      "HFpEF",
+      "Hf",
+      "Worsening of diastolic insufficiency due to new medication for blood pressure",
+      "chf",
+      "congestive heart failure",
+      "heart failure",
+      "heart faluire",
+      "pulmonary edema. CHF",
+      "right sided heart failure",
+      "“Heart failure, as well as hypoalbuminemia possibly due to malnutrition.”"
+    ]
+  },
+  {
+    "id": "02a1c652-c7a8-4f0c-8863-ead7a70dcff7",
+    "title": "Mrs. Lewis",
+    "sessionCount": 5,
+    "diagnoses": [
+      "Bronchiectasis",
+      "COPD exacerbation",
+      "copd exacerbation due to pneumonia",
+      "copd excesrbation"
+    ]
+  },
+  {
+    "id": "22b103c4-3526-4dce-bfef-c050622cadea",
+    "title": "Mr. Al-Karim",
+    "sessionCount": 9,
+    "diagnoses": [
+      "Crohn's Disease",
+      "Crohn's disease",
+      "chron",
+      "crohn disease",
+      "ibd"
+    ]
+  },
+  {
+    "id": "d8dc8563-5491-4c86-871d-312c207fd3af",
+    "title": "Mr. Papadopoulos",
+    "sessionCount": 9,
+    "diagnoses": [
+      "Supraventricular Tachycardia",
+      "anxiety",
+      "anxious",
+      "aortic stenosis",
+      "conduction disorder",
+      "panic attacks and anxity dissorder",
+      "unstable angina",
+      "חרדה",
+      "רפלקסים ואזו וגאלי מוגבר"
+    ]
+  },
+  {
+    "id": "e326725b-a12b-4323-baf3-4e8412f02bfa",
+    "title": "Mrs. Cohen",
+    "sessionCount": 8,
+    "diagnoses": [
+      "DVT",
+      "DVT in the left calf",
+      "dvt",
+      "pe"
+    ]
+  },
+  {
+    "id": "a584720f-b98e-4f4e-b362-e11311b1826d",
+    "title": "Mr. Lumi",
+    "sessionCount": 6,
+    "diagnoses": [
+      "GI bleeding",
+      "NSAids induced gastric ulcer that caused anemia",
+      "Peptic Ulcer Disease",
+      "gadtric ulcer becouse of Nsaid",
+      "gastric ulcer",
+      "peptic ulcer"
+    ]
+  },
+  {
+    "id": "c3cffbca-f651-4229-a323-d37e9c839e3f",
+    "title": "Mrs. Carter",
+    "sessionCount": 2,
+    "diagnoses": [
+      "Vaginitis",
+      "sexual transmitted diseases"
+    ]
+  }
+]
